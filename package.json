@@ -1,0 +1,11 @@
+{
+  "name": "web-lianliankan-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A dependency-free web Lianliankan (连连看) matching game.",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/game.test.js"
+  }
+}

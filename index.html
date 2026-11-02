@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="一个纯前端的网页版连连看小游戏：点选相同图案，用不超过两个转弯的线连接消除，清空整盘即可过关。"
+    />
+    <meta name="theme-color" content="#0f8f7a" />
+    <title>连连看 · 网页版</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb--a" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb--b" aria-hidden="true"></div>
+
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <span>🍓</span>
+            <span>🍋</span>
+          </div>
+          <div class="brand-copy">
+            <h1>连连看</h1>
+            <p>连起同款，清空整盘</p>
+          </div>
+        </div>
+
+        <div class="stats" aria-label="游戏数据">
+          <div class="stat">
+            <span class="stat-label">时间</span>
+            <strong class="stat-value" id="time">04:00</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">得分</span>
+            <strong class="stat-value" id="score">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">剩余</span>
+            <strong class="stat-value"><span id="remaining">32</span><em>对</em></strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="game-card" aria-label="连连看棋盘">
+          <div class="game-head">
+            <div class="status-line">
+              <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+              <p id="status" aria-live="polite">准备好了就开始吧</p>
+            </div>
+            <div
+              class="timebar"
+              id="timebar"
+              role="progressbar"
+              aria-label="剩余时间"
+              aria-valuemin="0"
+              aria-valuemax="240"
+              aria-valuenow="240"
+            >
+              <i id="timefill"></i>
+            </div>
+          </div>
+
+          <div class="board-shell" id="board-shell">
+            <div class="board" id="board" role="group" aria-label="8 乘 8 连连看棋盘"></div>
+            <svg class="path-layer" id="path-layer" aria-hidden="true"></svg>
+
+            <div class="overlay" id="overlay">
+              <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+                <div class="overlay-art" id="overlay-art" aria-hidden="true">🍓</div>
+                <p class="eyebrow" id="overlay-eyebrow">经典连线消除</p>
+                <h2 id="overlay-title">来一局连连看</h2>
+                <p class="overlay-text" id="overlay-text">
+                  两个相同图案，用不超过两个转弯的线连起来即可消除。在 4 分钟内清空整盘 32 对图案就能过关。
+                </p>
+                <div class="overlay-score" id="overlay-score" hidden>
+                  <span>本局得分</span>
+                  <strong id="final-score">0</strong>
+                </div>
+                <button class="btn btn-primary btn-lg" id="overlay-btn" type="button">开始游戏</button>
+                <p class="overlay-note" id="overlay-note">提示会扣 30 分 · 无路可消时自动重排</p>
+              </div>
+            </div>
+
+            <div class="toast" id="toast" role="status" aria-live="polite"></div>
+          </div>
+
+          <div class="controls">
+            <button class="btn btn-ghost" id="hint-btn" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 18h6M10 21h4" />
+                <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.6V16h5.2v-.5c0-.6.3-1.2.9-1.6A6 6 0 0 0 12 3Z" />
+              </svg>
+              提示
+              <kbd>-30</kbd>
+            </button>
+            <button class="btn btn-ghost" id="shuffle-btn" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m18 14 4 4-4 4" />
+                <path d="m18 2 4 4-4 4" />
+                <path d="M2 18h1.97a4 4 0 0 0 3.3-1.7l5.45-8.6a4 4 0 0 1 3.3-1.7H22" />
+                <path d="M2 6h1.97a4 4 0 0 1 3.6 2" />
+                <path d="M22 18h-6.04a4 4 0 0 1-3.3-1.8l-.36-.45" />
+              </svg>
+              重新排列
+            </button>
+            <button class="btn btn-icon" id="restart-btn" type="button" title="重新开始" aria-label="重新开始">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <aside class="side">
+          <section class="side-card">
+            <h2>怎么玩</h2>
+            <ol class="steps">
+              <li>
+                <span class="step-num">1</span>
+                <p>点选两个<strong>相同图案</strong>。</p>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <p>它们之间能用<strong>不超过两个转弯</strong>的空路连起来，就会一起消失。</p>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <p>在 4 分钟内清空 32 对图案，就能过关。</p>
+              </li>
+            </ol>
+            <div class="side-tip">💡 连线可以绕出棋盘外圈；真的无路可消时，棋盘会自动重排。</div>
+          </section>
+
+          <section class="side-card side-card--soft">
+            <div class="mini-demo" aria-hidden="true">
+              <span class="mini-tile" style="--hue: 338">🍓</span>
+              <svg viewBox="0 0 96 36">
+                <path d="M4 18h22c8 0 10-12 18-12s10 12 18 12h26" />
+              </svg>
+              <span class="mini-tile" style="--hue: 338">🍓</span>
+            </div>
+            <p>同款图案连成线，一次消掉一对。</p>
+          </section>
+        </aside>
+      </main>
+
+      <footer class="footer">纯前端小游戏 · 零依赖 · 用 npm start 启动</footer>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
