@@ -2,9 +2,9 @@ import {
   HINT_COST,
   LianliankanGame,
   MATCH_SCORE,
-  TILE_TYPES,
   WIN_TIME_BONUS,
 } from './game.js';
+import { THEMES, resolveTheme } from './themes.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ROWS = 8;
@@ -12,11 +12,15 @@ const COLS = 8;
 const TIME_LOW = 60;
 const TIME_CRITICAL = 30;
 const DEFAULT_STATUS = '找到相同图案，点击连线消除';
+const THEME_STORAGE_KEY = 'llk-theme';
 
 const els = {
   board: document.getElementById('board'),
   boardShell: document.getElementById('board-shell'),
   gameCard: document.querySelector('.game-card'),
+  brandTagline: document.getElementById('brand-tagline'),
+  logoFaces: [...document.querySelectorAll('.logo span')],
+  miniTiles: [...document.querySelectorAll('.mini-tile')],
   overlay: document.getElementById('overlay'),
   overlayArt: document.getElementById('overlay-art'),
   overlayEyebrow: document.getElementById('overlay-eyebrow'),
@@ -37,6 +41,11 @@ const els = {
   restartButton: document.getElementById('restart-btn'),
   pathLayer: document.getElementById('path-layer'),
   toast: document.getElementById('toast'),
+  themeSwitcher: document.getElementById('theme-switcher'),
+  themeButton: document.getElementById('theme-btn'),
+  themeLabel: document.getElementById('theme-label'),
+  themeMenu: document.getElementById('theme-menu'),
+  themeColor: document.getElementById('theme-color'),
 };
 
 const game = new LianliankanGame({ rows: ROWS, cols: COLS });
@@ -51,6 +60,74 @@ let statusTimer = null;
 let toastTimer = null;
 let pathTimer = null;
 let pathClearTimer = null;
+let themeMenuOpen = false;
+let currentTheme = resolveTheme(document.documentElement.dataset.theme);
+
+function currentFaces() {
+  return THEMES[currentTheme].faces;
+}
+
+function setThemeMenu(open, { focus = false } = {}) {
+  themeMenuOpen = open;
+  els.themeMenu.hidden = !open;
+  els.themeButton.setAttribute('aria-expanded', String(open));
+
+  if (open && focus) {
+    const active = els.themeMenu.querySelector('.theme-option[aria-checked="true"]');
+    const fallback = els.themeMenu.querySelector('.theme-option');
+    (active ?? fallback)?.focus();
+  }
+}
+
+function applyTheme(themeKey, { announce = false, persist = true, render = true } = {}) {
+  const theme = THEMES[themeKey];
+  if (!theme) return;
+
+  currentTheme = themeKey;
+  document.documentElement.dataset.theme = themeKey;
+  els.themeColor.setAttribute('content', theme.themeColor);
+
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, themeKey);
+    } catch (error) {
+      // Storage can be unavailable in private browsing; the selected theme still applies.
+    }
+  }
+
+  els.brandTagline.textContent = theme.tagline;
+  els.themeLabel.textContent = theme.label;
+  els.themeButton.setAttribute(
+    'aria-label',
+    `视觉风格：${theme.label}，点击切换`,
+  );
+  els.logoFaces.forEach((span, index) => {
+    span.textContent = theme.logo[index] ?? theme.logo[0];
+  });
+  for (const tile of els.miniTiles) tile.textContent = theme.logo[0];
+
+  for (const option of els.themeMenu.querySelectorAll('.theme-option')) {
+    option.setAttribute('aria-checked', String(option.dataset.theme === themeKey));
+  }
+
+  if (overlayMode === 'start') {
+    els.overlayArt.textContent = theme.logo[0];
+    els.overlayEyebrow.textContent = theme.eyebrow;
+    els.overlayTitle.textContent = theme.startTitle;
+  }
+
+  if (!render) return;
+
+  clearHint();
+  hidePath();
+  renderBoard();
+  syncSelection();
+
+  if (announce && game.status === 'playing') {
+    setStatus(`已切换为${theme.label}风格`);
+    showToast(`已切换为${theme.label}风格`);
+  }
+}
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -108,7 +185,7 @@ function renderBoard() {
       const value = game.board.grid[r][c];
       if (value === null) continue;
 
-      const type = TILE_TYPES[value];
+      const type = currentFaces()[value];
       const tile = document.createElement('button');
       tile.type = 'button';
       tile.className = 'tile';
@@ -122,7 +199,7 @@ function renderBoard() {
       const face = document.createElement('span');
       face.className = 'tile-face';
       face.setAttribute('aria-hidden', 'true');
-      face.textContent = type.emoji;
+      face.textContent = type.symbol;
       tile.append(face);
 
       fragment.append(tile);
@@ -285,6 +362,7 @@ function startTimer() {
 }
 
 function showOverlay() {
+  els.overlay.dataset.mode = overlayMode;
   els.board.inert = true;
   els.overlay.hidden = false;
   window.requestAnimationFrame(() => {
@@ -299,9 +377,10 @@ function hideOverlay() {
 
 function showStartOverlay() {
   overlayMode = 'start';
-  els.overlayArt.textContent = '🍓';
-  els.overlayEyebrow.textContent = '经典连线消除';
-  els.overlayTitle.textContent = '来一局连连看';
+  const theme = THEMES[currentTheme];
+  els.overlayArt.textContent = theme.logo[0];
+  els.overlayEyebrow.textContent = theme.eyebrow;
+  els.overlayTitle.textContent = theme.startTitle;
   const minutes = Math.round(game.duration / 60);
   els.overlayText.textContent = `两个相同图案，用不超过两个转弯的线连起来即可消除。在 ${minutes} 分钟内清空整盘 ${game.remaining} 对图案就能过关。`;
   els.overlayScore.hidden = true;
@@ -349,6 +428,7 @@ function startNewGame({ autoStart = false } = {}) {
   hideToast();
   locked = false;
   els.gameCard.classList.remove('is-live');
+  setThemeMenu(false);
   setControlsEnabled(false);
 
   game.reset();
@@ -371,6 +451,7 @@ function finishGame(won) {
   hidePath();
   hideToast();
   els.gameCard.classList.remove('is-live');
+  setThemeMenu(false);
   setControlsEnabled(false);
   setStatus(won ? '棋盘清空，恭喜过关！' : '时间到，本局结束', { persist: true });
   showResultOverlay(won);
@@ -431,8 +512,8 @@ function handleTileClick(r, c) {
   syncSelection();
 
   if (result.type === 'selected') {
-    const type = TILE_TYPES[game.board.grid[r][c]];
-    setStatus(`已选中 ${type.emoji} ${type.name}，再选一个相同图案`);
+    const type = currentFaces()[game.board.grid[r][c]];
+    setStatus(`已选中 ${type.symbol} ${type.name}，再选一个相同图案`);
   } else if (result.type === 'deselected') {
     setStatus('已取消选择');
   } else if (result.type === 'mismatch') {
@@ -491,6 +572,49 @@ els.hintButton.addEventListener('click', handleHint);
 els.shuffleButton.addEventListener('click', handleShuffle);
 els.restartButton.addEventListener('click', () => startNewGame());
 
+els.themeButton.addEventListener('click', (event) => {
+  event.stopPropagation();
+  setThemeMenu(!themeMenuOpen, { focus: !themeMenuOpen });
+});
+
+els.themeMenu.addEventListener('click', (event) => {
+  const option = event.target.closest('.theme-option');
+  if (!option) return;
+
+  if (option.dataset.theme !== currentTheme) {
+    applyTheme(option.dataset.theme, { announce: true });
+  }
+  setThemeMenu(false);
+  els.themeButton.focus();
+});
+
+els.themeMenu.addEventListener('keydown', (event) => {
+  const options = [...els.themeMenu.querySelectorAll('.theme-option')];
+  const index = options.indexOf(document.activeElement);
+  if (index < 0) return;
+
+  let nextIndex = null;
+  if (event.key === 'ArrowDown') nextIndex = (index + 1) % options.length;
+  else if (event.key === 'ArrowUp') nextIndex = (index - 1 + options.length) % options.length;
+  else if (event.key === 'Home') nextIndex = 0;
+  else if (event.key === 'End') nextIndex = options.length - 1;
+  if (nextIndex === null) return;
+
+  event.preventDefault();
+  options[nextIndex].focus();
+});
+
+document.addEventListener('click', (event) => {
+  if (!themeMenuOpen || els.themeSwitcher.contains(event.target)) return;
+  setThemeMenu(false);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !themeMenuOpen) return;
+  setThemeMenu(false);
+  els.themeButton.focus();
+});
+
 els.overlayButton.addEventListener('click', () => {
   if (overlayMode === 'start') {
     startRound();
@@ -499,4 +623,5 @@ els.overlayButton.addEventListener('click', () => {
   }
 });
 
+applyTheme(currentTheme, { persist: false, render: false });
 startNewGame();

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="orchard">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,10 +7,22 @@
       name="description"
       content="一个纯前端的网页版连连看小游戏：点选相同图案，用不超过两个转弯的线连接消除，清空整盘即可过关。"
     />
-    <meta name="theme-color" content="#0f8f7a" />
+    <meta name="theme-color" id="theme-color" content="#0f8f7a" />
     <title>连连看 · 网页版</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <script>
+      // Apply the saved skin before first paint to avoid a flash of the default theme.
+      try {
+        const saved = localStorage.getItem('llk-theme');
+        if (['orchard', 'cartoon', 'fantasy'].includes(saved)) {
+          document.documentElement.dataset.theme = saved;
+        }
+      } catch (error) {
+        /* Private browsing can disable storage; the default skin still works. */
+      }
+    </script>
     <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="stylesheet" href="assets/themes.css" />
   </head>
   <body>
     <div class="bg-orb bg-orb--a" aria-hidden="true"></div>
@@ -25,7 +37,7 @@
           </div>
           <div class="brand-copy">
             <h1>连连看</h1>
-            <p>连起同款，清空整盘</p>
+            <p id="brand-tagline">连起同款，清空整盘</p>
           </div>
         </div>
 
@@ -69,7 +81,7 @@
             <div class="board" id="board" role="group" aria-label="8 乘 8 连连看棋盘"></div>
             <svg class="path-layer" id="path-layer" aria-hidden="true"></svg>
 
-            <div class="overlay" id="overlay">
+            <div class="overlay" id="overlay" data-mode="start">
               <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
                 <div class="overlay-art" id="overlay-art" aria-hidden="true">🍓</div>
                 <p class="eyebrow" id="overlay-eyebrow">经典连线消除</p>
@@ -108,6 +120,46 @@
               </svg>
               重新排列
             </button>
+            <div class="theme-switcher" id="theme-switcher">
+              <button
+                class="btn btn-ghost theme-trigger"
+                id="theme-btn"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="theme-menu"
+                aria-label="视觉风格：果园，点击切换"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 1.8-4.2 2.5 2.5 0 0 1 1.8-4.3H18a3 3 0 0 0 3-3A9 9 0 0 0 12 3Z" />
+                  <circle cx="8" cy="9" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="7" cy="14" r="1" fill="currentColor" stroke="none" />
+                  <circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" />
+                </svg>
+                <span class="theme-trigger-label">风格 · <span id="theme-label">果园</span></span>
+                <svg class="theme-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 4.5 3 3 3-3" />
+                </svg>
+              </button>
+              <div class="theme-menu" id="theme-menu" role="menu" aria-label="选择视觉风格" hidden>
+                <p class="theme-menu-title">视觉风格</p>
+                <button class="theme-option" type="button" role="menuitemradio" aria-checked="true" data-theme="orchard">
+                  <span class="theme-swatch theme-swatch--orchard" aria-hidden="true">🍓</span>
+                  <span class="theme-option-copy"><strong>果园</strong><small>清新果香 · 默认</small></span>
+                  <span class="theme-check" aria-hidden="true">✓</span>
+                </button>
+                <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme="cartoon">
+                  <span class="theme-swatch theme-swatch--cartoon" aria-hidden="true">🐻</span>
+                  <span class="theme-option-copy"><strong>卡通</strong><small>萌趣动物 · 明亮</small></span>
+                  <span class="theme-check" aria-hidden="true">✓</span>
+                </button>
+                <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme="fantasy">
+                  <span class="theme-swatch theme-swatch--fantasy" aria-hidden="true">月</span>
+                  <span class="theme-option-copy"><strong>玄幻</strong><small>灵石秘境 · 幽暗</small></span>
+                  <span class="theme-check" aria-hidden="true">✓</span>
+                </button>
+              </div>
+            </div>
             <button class="btn btn-icon" id="restart-btn" type="button" title="重新开始" aria-label="重新开始">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
