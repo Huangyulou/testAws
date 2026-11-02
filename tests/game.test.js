@@ -14,6 +14,7 @@ import {
   findPath,
   shuffleRemaining,
 } from '../src/game.js';
+import { THEMES, THEME_ORDER, resolveTheme } from '../src/themes.js';
 
 /**
  * Build a board with an empty border from a list of [row, column, value]
@@ -416,4 +417,28 @@ test('reset restores a fresh ready game', () => {
   assert.equal(game.remaining, 32);
   assert.equal(game.selected, null);
   assert.ok(game.hasMoves());
+});
+
+test('every visual theme maps all tile types to a unique face', () => {
+  assert.deepEqual([...THEME_ORDER], ['orchard', 'cartoon', 'fantasy']);
+
+  for (const key of THEME_ORDER) {
+    const theme = THEMES[key];
+    assert.ok(theme, `${key} should exist`);
+
+    assert.equal(theme.faces.length, TILE_TYPES.length);
+    assert.equal(new Set(theme.faces.map((face) => face.symbol)).size, TILE_TYPES.length);
+    assert.equal(new Set(theme.faces.map((face) => face.name)).size, TILE_TYPES.length);
+    assert.equal(new Set(theme.faces.map((face) => face.hue)).size, TILE_TYPES.length);
+
+    for (const face of theme.faces) {
+      assert.ok(face.symbol.length > 0);
+      assert.ok(face.name.length > 0);
+      assert.ok(face.hue >= 0 && face.hue < 360);
+    }
+  }
+
+  assert.equal(resolveTheme('fantasy'), 'fantasy');
+  assert.equal(resolveTheme('unknown'), 'orchard');
+  assert.equal(resolveTheme(undefined), 'orchard');
 });

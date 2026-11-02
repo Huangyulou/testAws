@@ -1,17 +1,29 @@
 # 连连看 · 网页版
 
-一个零依赖的网页版连连看小游戏。点选两个相同图案，只要能用不超过两个转弯的空路连起来，就会一起消除；在 4 分钟内清空整盘 32 对图案即可过关。
+一个零依赖的网页版连连看小游戏。点选两个相同图案，只要能用不超过两个转弯的空路连起来，就会一起消除；在 4 分钟内清空整盘 32 对图案即可过关。提供果园、卡通、玄幻三种视觉风格，可随时切换。
 
 ![游戏界面](docs/screenshots/after-playing.jpg)
 
 ## 功能
 
-- 8 × 8 棋盘，16 种水果图案，经典两转弯连线规则
+- 8 × 8 棋盘，16 种图案，经典两转弯连线规则
+- 三种视觉风格：果园（水果）、卡通（动物）、玄幻（灵纹）
+- 风格选择会保存在浏览器本地，下次打开仍然生效
 - 连线可以绕出棋盘外圈，符合经典连连看玩法
 - 提示（扣 30 分）、手动重排、无路可消时自动重排
 - 4 分钟倒计时、得分与剩余时间奖励、过关 / 超时结算
 - 响应式布局，支持桌面和手机浏览器
 - 纯 HTML / CSS / JavaScript，无框架、无构建步骤、无第三方依赖
+
+## 视觉风格
+
+点击棋盘下方的“风格”按钮，可在三种风格之间切换；切换不会重置棋盘，当前选择和倒计时都会保留。
+
+| 卡通 | 玄幻 |
+| --- | --- |
+| ![卡通风格](docs/screenshots/theme-cartoon.jpg) | ![玄幻风格](docs/screenshots/theme-fantasy.jpg) |
+
+![风格选择菜单](docs/screenshots/theme-menu.jpg)
 
 ## 本地运行
 
@@ -40,13 +52,16 @@ npm test
 ## 项目结构
 
 ```text
-index.html            页面结构
-assets/styles.css     样式与响应式布局
-assets/favicon.svg    站点图标
-src/game.js           纯游戏逻辑（棋盘、路径判定、状态机）
-src/app.js            DOM 渲染、交互、计时与动画
-scripts/serve.mjs     零依赖本地静态服务器
-tests/game.test.js    游戏逻辑单元测试
+index.html             页面结构
+assets/styles.css      基础样式与响应式布局
+assets/themes.css      果园 / 卡通 / 玄幻三套主题
+assets/favicon.svg     站点图标
+src/game.js            纯游戏逻辑（棋盘、路径判定、状态机）
+src/themes.js          视觉主题与图案配置
+src/app.js             DOM 渲染、交互、主题切换、计时与动画
+scripts/serve.mjs      零依赖本地静态服务器
+tests/game.test.js     游戏逻辑与主题配置单元测试
+docs/screenshots/      界面截图
 ```
 
 ## 玩法说明
