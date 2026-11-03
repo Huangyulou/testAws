@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="一个纯前端的网页版连连看小游戏：点选相同图案，用不超过两个转弯的线连接消除，清空整盘即可过关。"
+      content="一个可登录的网页版连连看小游戏：点选相同图案，用不超过两个转弯的线连接消除，清空整盘即可过关。"
     />
     <meta name="theme-color" id="theme-color" content="#0f8f7a" />
     <title>连连看 · 网页版</title>
@@ -41,18 +41,25 @@
           </div>
         </div>
 
-        <div class="stats" aria-label="游戏数据">
-          <div class="stat">
-            <span class="stat-label">时间</span>
-            <strong class="stat-value" id="time">04:00</strong>
+        <div class="topbar-side">
+          <div class="account" id="account" hidden>
+            <span class="account-avatar" id="account-avatar" aria-hidden="true"></span>
+            <span class="account-name" id="account-name"></span>
+            <button class="account-logout" id="logout-btn" type="button">退出</button>
           </div>
-          <div class="stat">
-            <span class="stat-label">得分</span>
-            <strong class="stat-value" id="score">0</strong>
-          </div>
-          <div class="stat">
-            <span class="stat-label">剩余</span>
-            <strong class="stat-value"><span id="remaining">32</span><em>对</em></strong>
+          <div class="stats" aria-label="游戏数据">
+            <div class="stat">
+              <span class="stat-label">时间</span>
+              <strong class="stat-value" id="time">04:00</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">得分</span>
+              <strong class="stat-value" id="score">0</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">剩余</span>
+              <strong class="stat-value"><span id="remaining">32</span><em>对</em></strong>
+            </div>
           </div>
         </div>
       </header>
@@ -202,7 +209,83 @@
         </aside>
       </main>
 
-      <footer class="footer">纯前端小游戏 · 零依赖 · 用 npm start 启动</footer>
+      <footer class="footer">零依赖小游戏 · 登录后开玩 · 用 npm start 启动</footer>
+    </div>
+
+    <div class="auth-overlay" id="auth-gate" hidden>
+      <div
+        class="overlay-card auth-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-title"
+        aria-describedby="auth-subtitle"
+      >
+        <div class="overlay-art auth-art" id="auth-art" aria-hidden="true">🔐</div>
+        <p class="eyebrow" id="auth-eyebrow">玩家账号</p>
+        <h2 id="auth-title">登录后开始游戏</h2>
+        <p class="overlay-text" id="auth-subtitle">输入账号密码，继续你的连连看对局。</p>
+
+        <div class="auth-tabs" id="auth-tabs" role="tablist" aria-label="登录或注册">
+          <button
+            class="auth-tab"
+            id="auth-tab-login"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="auth-form"
+          >
+            登录
+          </button>
+          <button
+            class="auth-tab"
+            id="auth-tab-register"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="auth-form"
+            tabindex="-1"
+          >
+            注册
+          </button>
+        </div>
+
+        <form class="auth-form" id="auth-form" novalidate>
+          <label class="auth-field">
+            <span class="auth-field-label">用户名</span>
+            <input
+              class="auth-input"
+              id="auth-username"
+              name="username"
+              type="text"
+              autocomplete="username"
+              maxlength="20"
+              spellcheck="false"
+              required
+            />
+          </label>
+          <label class="auth-field">
+            <span class="auth-field-label">密码</span>
+            <input
+              class="auth-input"
+              id="auth-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              maxlength="128"
+              required
+            />
+          </label>
+          <p class="auth-error" id="auth-error" role="alert" hidden></p>
+          <button class="btn btn-primary btn-lg auth-submit" id="auth-submit" type="submit">
+            登录
+          </button>
+        </form>
+
+        <button class="btn btn-ghost auth-retry" id="auth-retry" type="button" hidden>
+          重新连接
+        </button>
+        <p class="overlay-note" id="auth-note">还没有账号？点击上方「注册」创建</p>
+      </div>
     </div>
 
     <script type="module" src="src/app.js"></script>
