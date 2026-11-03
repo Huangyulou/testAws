@@ -756,6 +756,139 @@
   color: #aa9c78;
 }
 
+/* ---------------------------------------------------------------- accounts */
+
+:root[data-theme="cartoon"] .auth-overlay {
+  background: rgba(226, 246, 255, 0.78);
+}
+
+:root[data-theme="cartoon"] .account {
+  border: 2px solid #223041;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #223041;
+  backdrop-filter: none;
+}
+
+:root[data-theme="cartoon"] .account-avatar {
+  border: 2px solid #223041;
+  background: #1f6feb;
+}
+
+:root[data-theme="cartoon"] .account-logout {
+  color: #4f6578;
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  :root[data-theme="cartoon"] .account-logout:hover {
+    background: #eaf6ff;
+    color: #1758c7;
+  }
+}
+
+:root[data-theme="cartoon"] .auth-tabs {
+  border: 2px solid #223041;
+  background: #eaf6ff;
+}
+
+:root[data-theme="cartoon"] .auth-tab {
+  color: #4f6578;
+  font-weight: 700;
+}
+
+:root[data-theme="cartoon"] .auth-tab[aria-selected="true"] {
+  background: #ffe066;
+  box-shadow: none;
+  color: #223041;
+}
+
+:root[data-theme="cartoon"] .auth-field-label {
+  color: #4f6578;
+}
+
+:root[data-theme="cartoon"] .auth-input {
+  border: 2px solid #223041;
+  background: #ffffff;
+  color: #223041;
+}
+
+:root[data-theme="cartoon"] .auth-input:focus {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.18);
+}
+
+:root[data-theme="cartoon"] .auth-error {
+  border: 2px solid #223041;
+  background: #ffe1d6;
+  color: #8a2c12;
+}
+
+:root[data-theme="fantasy"] .auth-overlay {
+  background: rgba(4, 14, 12, 0.8);
+}
+
+:root[data-theme="fantasy"] .account {
+  border-color: rgba(232, 195, 122, 0.34);
+  background: rgba(10, 31, 27, 0.74);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="fantasy"] .account-avatar {
+  background: linear-gradient(145deg, #e8c37a, #b78a3f);
+  color: #1b1408;
+}
+
+:root[data-theme="fantasy"] .account-name {
+  color: #f0e4c4;
+}
+
+:root[data-theme="fantasy"] .account-logout {
+  color: #c8b98f;
+}
+
+@media (hover: hover) {
+  :root[data-theme="fantasy"] .account-logout:hover {
+    background: rgba(232, 195, 122, 0.12);
+    color: #f0d18a;
+  }
+}
+
+:root[data-theme="fantasy"] .auth-tabs {
+  border-color: rgba(232, 195, 122, 0.25);
+  background: rgba(232, 195, 122, 0.08);
+}
+
+:root[data-theme="fantasy"] .auth-tab {
+  color: #c8b98f;
+}
+
+:root[data-theme="fantasy"] .auth-tab[aria-selected="true"] {
+  background: rgba(232, 195, 122, 0.16);
+  box-shadow: none;
+  color: #f0d18a;
+}
+
+:root[data-theme="fantasy"] .auth-field-label {
+  color: #aa9c78;
+}
+
+:root[data-theme="fantasy"] .auth-input {
+  border-color: rgba(232, 195, 122, 0.3);
+  background: rgba(6, 20, 17, 0.9);
+  color: #f0e4c4;
+}
+
+:root[data-theme="fantasy"] .auth-input:focus {
+  border-color: #e8c37a;
+  box-shadow: 0 0 0 3px rgba(232, 195, 122, 0.16);
+}
+
+:root[data-theme="fantasy"] .auth-error {
+  border: 1px solid rgba(255, 157, 107, 0.4);
+  background: rgba(255, 157, 107, 0.1);
+  color: #ffb08b;
+}
+
 /* --------------------------------------------------------------- animations */
 
 @keyframes dot-pulse-cartoon {

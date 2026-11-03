@@ -5,6 +5,7 @@ import {
   WIN_TIME_BONUS,
 } from './game.js';
 import { THEMES, resolveTheme } from './themes.js';
+import { AuthRequestError, currentUser, login, logout, register } from './auth.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ROWS = 8;
@@ -46,6 +47,26 @@ const els = {
   themeLabel: document.getElementById('theme-label'),
   themeMenu: document.getElementById('theme-menu'),
   themeColor: document.getElementById('theme-color'),
+  page: document.querySelector('.page'),
+  account: document.getElementById('account'),
+  accountAvatar: document.getElementById('account-avatar'),
+  accountName: document.getElementById('account-name'),
+  logoutButton: document.getElementById('logout-btn'),
+  authGate: document.getElementById('auth-gate'),
+  authArt: document.getElementById('auth-art'),
+  authEyebrow: document.getElementById('auth-eyebrow'),
+  authTitle: document.getElementById('auth-title'),
+  authSubtitle: document.getElementById('auth-subtitle'),
+  authTabs: document.getElementById('auth-tabs'),
+  authTabLogin: document.getElementById('auth-tab-login'),
+  authTabRegister: document.getElementById('auth-tab-register'),
+  authForm: document.getElementById('auth-form'),
+  authUsername: document.getElementById('auth-username'),
+  authPassword: document.getElementById('auth-password'),
+  authError: document.getElementById('auth-error'),
+  authSubmit: document.getElementById('auth-submit'),
+  authRetry: document.getElementById('auth-retry'),
+  authNote: document.getElementById('auth-note'),
 };
 
 const game = new LianliankanGame({ rows: ROWS, cols: COLS });
@@ -62,6 +83,9 @@ let pathTimer = null;
 let pathClearTimer = null;
 let themeMenuOpen = false;
 let currentTheme = resolveTheme(document.documentElement.dataset.theme);
+let authUser = null;
+let authMode = 'login';
+let authBusy = false;
 
 function currentFaces() {
   return THEMES[currentTheme].faces;
@@ -406,7 +430,208 @@ function showResultOverlay(won) {
   showOverlay();
 }
 
+/* ------------------------------------------------------------ auth gate */
+
+function setAuthError(message) {
+  els.authError.textContent = message;
+  els.authError.hidden = !message;
+}
+
+function authSubmitLabel() {
+  if (!authBusy) return authMode === 'register' ? '注册' : '登录';
+  return authMode === 'register' ? '注册中…' : '登录中…';
+}
+
+function setAuthBusy(busy) {
+  authBusy = busy;
+  els.authSubmit.disabled = busy;
+  els.authSubmit.textContent = authSubmitLabel();
+  els.authUsername.disabled = busy;
+  els.authPassword.disabled = busy;
+  els.authTabLogin.disabled = busy;
+  els.authTabRegister.disabled = busy;
+}
+
+function setAuthMode(mode, { focus = false } = {}) {
+  authMode = mode === 'register' ? 'register' : 'login';
+  const isRegister = authMode === 'register';
+
+  els.authTitle.textContent = isRegister ? '创建你的账号' : '登录后开始游戏';
+  els.authSubtitle.textContent = isRegister
+    ? '注册成功会自动登录，马上就能开一局。'
+    : '输入账号密码，继续你的连连看对局。';
+  els.authTabLogin.setAttribute('aria-selected', String(!isRegister));
+  els.authTabRegister.setAttribute('aria-selected', String(isRegister));
+  els.authTabLogin.tabIndex = isRegister ? -1 : 0;
+  els.authTabRegister.tabIndex = isRegister ? 0 : -1;
+  els.authPassword.autocomplete = isRegister ? 'new-password' : 'current-password';
+  els.authNote.textContent = isRegister
+    ? '密码至少 8 位；账号数据只保存在运行游戏的这台电脑上'
+    : '还没有账号？点击上方「注册」创建';
+  els.authSubmit.textContent = authSubmitLabel();
+  setAuthError('');
+
+  if (focus) els.authUsername.focus({ preventScroll: true });
+}
+
+function openAuthGate() {
+  els.authGate.hidden = false;
+  els.board.inert = true;
+  els.page.inert = true;
+}
+
+function hideAuthGate() {
+  els.authGate.hidden = true;
+  els.page.inert = false;
+}
+
+function showAuthChecking() {
+  openAuthGate();
+  els.authTabs.hidden = true;
+  els.authForm.hidden = true;
+  els.authRetry.hidden = true;
+  els.authArt.textContent = '🔐';
+  els.authEyebrow.textContent = '玩家账号';
+  els.authTitle.textContent = '正在检查登录状态…';
+  els.authSubtitle.textContent = '请稍候';
+  els.authNote.textContent = '';
+}
+
+function showAuthForm() {
+  openAuthGate();
+  els.authTabs.hidden = false;
+  els.authForm.hidden = false;
+  els.authRetry.hidden = true;
+  els.authArt.textContent = '🔐';
+  els.authEyebrow.textContent = '玩家账号';
+  setAuthMode(authMode);
+  setAuthBusy(false);
+  window.requestAnimationFrame(() => els.authUsername.focus({ preventScroll: true }));
+}
+
+function showAuthUnavailable() {
+  openAuthGate();
+  els.authTabs.hidden = true;
+  els.authForm.hidden = true;
+  els.authRetry.hidden = false;
+  els.authArt.textContent = '📡';
+  els.authEyebrow.textContent = '连接失败';
+  els.authTitle.textContent = '无法连接登录服务';
+  els.authSubtitle.textContent =
+    '账号登录需要本地服务支持。请用 npm start 启动游戏，或确认服务正在运行后重试。';
+  els.authNote.textContent = '';
+  window.requestAnimationFrame(() => els.authRetry.focus({ preventScroll: true }));
+}
+
+function setAuthUser(user) {
+  authUser = user;
+  els.account.hidden = !user;
+  if (!user) return;
+
+  els.accountName.textContent = user.username;
+  els.accountAvatar.textContent =
+    Array.from(user.username)[0]?.toUpperCase() ?? '玩';
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  if (authBusy) return;
+
+  const username = els.authUsername.value.trim();
+  const password = els.authPassword.value;
+
+  if (!username) {
+    setAuthError('请输入用户名');
+    els.authUsername.focus();
+    return;
+  }
+  if (!password) {
+    setAuthError('请输入密码');
+    els.authPassword.focus();
+    return;
+  }
+
+  const mode = authMode;
+  setAuthError('');
+  setAuthBusy(true);
+
+  try {
+    const user =
+      mode === 'register'
+        ? await register(username, password)
+        : await login(username, password);
+
+    setAuthBusy(false);
+    els.authForm.reset();
+    setAuthUser(user);
+    hideAuthGate();
+    window.requestAnimationFrame(() => els.overlayButton.focus({ preventScroll: true }));
+    showToast(
+      mode === 'register' ? `账号已创建，欢迎 ${user.username}` : `欢迎回来，${user.username}`,
+    );
+  } catch (error) {
+    setAuthBusy(false);
+    if (error instanceof AuthRequestError && error.code === 'network_error') {
+      showAuthUnavailable();
+      return;
+    }
+    setAuthError(error.message ?? '登录失败，请稍后再试');
+    els.authPassword.select();
+  }
+}
+
+async function handleLogout() {
+  if (els.logoutButton.disabled) return;
+
+  els.logoutButton.disabled = true;
+  try {
+    await logout();
+  } catch (error) {
+    showToast(error.message ?? '退出登录失败，请稍后再试');
+    return;
+  } finally {
+    els.logoutButton.disabled = false;
+  }
+
+  setAuthUser(null);
+  authMode = 'login';
+  startNewGame();
+  showAuthForm();
+}
+
+function handleAuthTabKeydown(event) {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+  event.preventDefault();
+  setAuthMode(authMode === 'login' ? 'register' : 'login', { focus: true });
+}
+
+async function initAuth() {
+  try {
+    const user = await currentUser();
+    if (user) {
+      setAuthUser(user);
+      hideAuthGate();
+      return;
+    }
+
+    setAuthUser(null);
+    showAuthForm();
+  } catch {
+    setAuthUser(null);
+    showAuthUnavailable();
+  }
+}
+
+function retryAuth() {
+  showAuthChecking();
+  initAuth();
+}
+
 function startRound() {
+  if (!authUser) {
+    showAuthForm();
+    return;
+  }
   if (!game.start()) return;
 
   hideOverlay();
@@ -526,7 +751,7 @@ function handleTileClick(r, c) {
 }
 
 function handleHint() {
-  if (game.status !== 'playing' || locked) return;
+  if (!authUser || game.status !== 'playing' || locked) return;
 
   clearHint();
   hidePath();
@@ -548,7 +773,7 @@ function handleHint() {
 }
 
 function handleShuffle() {
-  if (game.status !== 'playing' || locked) return;
+  if (!authUser || game.status !== 'playing' || locked) return;
 
   clearHint();
   hidePath();
@@ -570,7 +795,18 @@ els.board.addEventListener('click', (event) => {
 
 els.hintButton.addEventListener('click', handleHint);
 els.shuffleButton.addEventListener('click', handleShuffle);
-els.restartButton.addEventListener('click', () => startNewGame());
+els.restartButton.addEventListener('click', () => {
+  if (!authUser) return;
+  startNewGame();
+});
+els.logoutButton.addEventListener('click', handleLogout);
+
+els.authTabLogin.addEventListener('click', () => setAuthMode('login', { focus: true }));
+els.authTabRegister.addEventListener('click', () => setAuthMode('register', { focus: true }));
+els.authTabLogin.addEventListener('keydown', handleAuthTabKeydown);
+els.authTabRegister.addEventListener('keydown', handleAuthTabKeydown);
+els.authForm.addEventListener('submit', handleAuthSubmit);
+els.authRetry.addEventListener('click', retryAuth);
 
 els.themeButton.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -625,3 +861,5 @@ els.overlayButton.addEventListener('click', () => {
 
 applyTheme(currentTheme, { persist: false, render: false });
 startNewGame();
+showAuthChecking();
+initAuth();
